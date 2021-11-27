@@ -27,3 +27,7 @@ class KingEndState(Enum):
     CAPTURED = 1
     SAVED = 2
     NOTHING = 3
+
+class Mode(Enum):
+    ATTACKING = 1
+    DEFENDING = 2

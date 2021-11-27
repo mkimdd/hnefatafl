@@ -1,7 +1,11 @@
 import os
+import random
+import copy
 
 from Square import Square
-from refs import Character, KingEndState, MoveStatus, SquareType, GameState
+from refs import Character, KingEndState, MoveStatus, SquareType, GameState, Mode
+from Move import Move
+from Node import Node
 
 class Game:
     """Represents Hnefatafl game."""
@@ -27,12 +31,102 @@ class Game:
         # what the current game state is
         self.game_state = GameState.ACTIVE
 
-        self.moves = [
-            (1, 0),
-            (0, 1),
-            (-1, 0),
-            (0, -1)
-        ]
+    def get_board(self) -> dict:
+        return self.board
+
+    def perform(self, move: Move, mode: Mode):
+        if mode == Mode.ATTACKING:
+            self.attacker_play(move)
+        else:
+            self.defender_play(move)
+
+    def get_ai_input(self) -> Move:
+        return monte_carlo_tree_search(self, Node())
+
+    def in_bounds(self, destination: tuple) -> bool:
+        if destination[0] < 1 or destination[0] > 11:
+            return False
+        if destination[1] < 1 or destination[1] > 11:
+            return False
+        return True
+
+    def get_attacker_moves(self) -> list:
+        moves = []
+        for attacker in self.attackers:
+
+            # check upwards
+            i = 1
+            dest = (attacker[0], attacker[1]+i)
+            while self.in_bounds(dest) and self.board[dest].is_available_for_attacker():
+                moves.append(Move(attacker, dest))
+                i += 1
+                dest = (attacker[0], attacker[1]+i)
+
+            # check downwards
+            i = 1
+            dest = (attacker[0], attacker[1]-i)
+            while self.in_bounds(dest) and self.board[dest].is_available_for_attacker():
+                moves.append(Move(attacker, dest))
+                i += 1
+                dest = (attacker[0], attacker[1]-i)
+            
+            # check left
+            i = 1
+            dest = (attacker[0]-i, attacker[1])
+            while self.in_bounds(dest) and self.board[dest].is_available_for_attacker():
+                moves.append(Move(attacker, dest))
+                i += 1
+                dest = (attacker[0]-i, attacker[1])
+
+            # check right
+            i = 1
+            dest = (attacker[0]+i, attacker[1])
+            while self.in_bounds(dest) and self.board[dest].is_available_for_attacker():
+                moves.append(Move(attacker, dest))
+                i += 1
+                dest = (attacker[0]+i, attacker[1])
+        
+        return moves
+
+    def get_defender_moves(self) -> list:
+        moves = []
+        defenders_and_king = copy.deepcopy(self.defenders)
+        defenders_and_king.append(self.king)
+        for defender in defenders_and_king:
+
+            # check upwards
+            i = 1
+            dest = (defender[0], defender[1]+i)
+            while self.in_bounds(dest) and self.board[dest].is_available_for_defender():
+                moves.append(Move(defender, dest))
+                i += 1
+                dest = (defender[0], defender[1]+i)
+
+            # check downwards
+            i = 1
+            dest = (defender[0], defender[1]-i)
+            while self.in_bounds(dest) and self.board[dest].is_available_for_defender():
+                moves.append(Move(defender, dest))
+                i += 1
+                dest = (defender[0], defender[1]-i)
+            
+            # check left
+            i = 1
+            dest = (defender[0]-i, defender[1])
+            while self.in_bounds(dest) and self.board[dest].is_available_for_defender():
+                moves.append(Move(defender, dest))
+                i += 1
+                dest = (defender[0]-i, defender[1])
+
+            # check right
+            i = 1
+            dest = (defender[0]+i, defender[1])
+            while self.in_bounds(dest) and self.board[dest].is_available_for_defender():
+                moves.append(Move(defender, dest))
+                i += 1
+                dest = (defender[0]+i, defender[1])
+        
+        return moves
 
     def setup_board(self):
         """Sets up the board with a predefined starting arrangement."""
@@ -129,9 +223,7 @@ class Game:
 
         return MoveStatus.AVAILABLE
 
-    def attacker_play(self) -> bool:
-        """Performs attacker move."""
-        # TODO fix smell, command input wacked out
+    def get_move_input(self) -> Move:
         try:
             move = input("Command >>> ")
             move.strip()
@@ -140,9 +232,14 @@ class Game:
             source = (int(source[0]), int(source[1]))
             dest = pox[1].split(',')
             dest = (int(dest[0]), int(dest[1]))
+            return Move(source, dest)
         except:
             print("INVALID COMMAND... EXITING")
             exit()
+
+    def attacker_play(self, move: Move) -> bool:
+        """Performs attacker move."""
+        source, dest = move.get_source(), move.get_destination()
 
         # makes the Attacker move is possible
         if self.board[source].get_occupied() == Character.ATTACKER:
@@ -159,24 +256,56 @@ class Game:
         
         return False
 
-    def defender_play(self) -> bool:
+    def defender_play(self, move: Move) -> bool:
         """Performs defender move."""
-        return True
+        source, dest = move.get_source(), move.get_destination()
+
+        character = self.board[source].get_occupied()
+        if character == Character.DEFENDER or character == Character.KING:
+            if self.board[dest].is_available_for_defender():
+                status = self.check_path(source, dest)
+                if status == MoveStatus.AVAILABLE:
+                    if character == Character.DEFENDER:
+                        self.board[dest].move_defender_here()
+                        self.defenders.remove(source)
+                        self.defenders.append(dest)
+                        self.board[source].clear()
+                    else:
+                        self.board[dest].move_king_here()
+                        self.king = dest
+                        self.board[source].clear()
+                    return True
+                else:
+                    print(f"Unable to perform move... Status: {status}")
+
+        return False
 
     def plus_position(self, loc: tuple, mod: tuple) -> tuple:
         return (loc[0] + mod[0], loc[1] + mod[1])
 
     def check_king(self) -> KingEndState:
         """Check if the king has been captured or saved."""
+        moves = [
+            (1, 0),
+            (0, 1),
+            (-1, 0),
+            (0, -1)
+        ]
         captured = True
-        for move in self.moves:
-            if self.board[self.plus_position(self.king, move)].get_occupied() != Character.ATTACKER:
+        for move in moves:
+            reach = self.plus_position(self.king, move)
+            if self.in_bounds(reach):
+                if self.board[self.plus_position(self.king, move)].get_occupied() != Character.ATTACKER:
+                    captured = False
+                    break
+            else:
                 captured = False
                 break
         if captured:
+            self.king = None
             return KingEndState.CAPTURED
 
-        corners = {(1, 1), (1, 11), (11, 1), (11, 11)}
+        corners = [(1, 1), (1, 11), (11, 1), (11, 11)]
         if self.king in corners:
             return KingEndState.SAVED
 
@@ -194,17 +323,13 @@ class Game:
         up = (loc[0], loc[1]+1)
         down = (loc[0], loc[1]-1)
 
-        try:
+        if self.in_bounds(left) and self.in_bounds(right):
             if self.board[left].get_occupied() == target and self.board[right].get_occupied() == target:
                 return True
-        except KeyError:
-            pass
 
-        try:
+        if self.in_bounds(up) and self.in_bounds(down):
             if self.board[up].get_occupied() == target and self.board[down].get_occupied() == target:
                 return True
-        except KeyError:
-            pass
 
         return False
 
@@ -247,3 +372,95 @@ class Game:
             print()
         print()
         print(f"Game Status: {self.game_state}")
+
+def selection(focus: Node) -> Node:
+    """Returns the best node for Defense."""
+    targets = focus.children
+    targets.sort(key=lambda x: x.confidence(), reverse=True)
+    if not targets:
+        return focus
+    return targets[0]
+
+def expansion(game: Game, focus: Node, mode: Mode):
+    """Expands given leaf node with all possible next states."""
+    moves = game.get_attacker_moves() if mode == Mode.ATTACKING else game.get_defender_moves()
+    for move in moves:
+        novel = Node(focus, move)
+        focus.children.append(novel)
+
+def terminal(simulation: Game) -> bool:
+    state = simulation.check_state()
+    if state != GameState.ACTIVE:
+        return True
+    return False
+
+def rollout(game: Game, mode: Mode) -> Game:
+    """Performs a simulation from the current state of the given Game."""
+    simulation = copy.deepcopy(game)
+    
+    while True:
+        print(">>>SIMULATION<<<")
+        simulation.display()
+        if mode == Mode.ATTACKING:
+            attacker_move = random.choice(simulation.get_attacker_moves())
+            simulation.perform(attacker_move, mode)
+            simulation.add_turn()
+            if terminal(simulation):
+                break
+            mode = Mode.DEFENDING
+            print(simulation.king)
+        else:
+            defender_move = random.choice(simulation.get_defender_moves())
+            simulation.perform(defender_move, mode)
+            simulation.add_turn()
+            if terminal(simulation):
+                break
+            mode = Mode.ATTACKING
+            print(simulation.king)
+
+    status = simulation.check_state()
+    value = 0
+    if status == GameState.ATTACKERS_WON:
+        value = -1 * simulation.get_clock()
+    elif status == GameState.DEFENDERS_WIN:
+        value = simulation.get_clock()
+    elif status == GameState.DRAW:
+        value = -1
+    return value
+
+def backpropogate(focus: Node, result: int):
+    while focus.parent != None:
+        focus.update(result)
+        focus = focus.parent
+
+def best_move(focus: Node) -> Move:
+    targets = focus.children
+    targets.sort(key=lambda x: x.confidence(), reverse=True)
+    return targets[0].get_move()
+
+def monte_carlo_tree_search(game: Game, root: Node) -> Move:
+    MAX_TIME = 100
+    clock = 0
+    focus = root
+    current_mode = Mode.DEFENDING
+
+    while clock < MAX_TIME:
+        print(f"Starting cycle {clock} out of {MAX_TIME}...")
+        print("Defender selecting...")
+        leaf = selection(focus)
+        print("Defender expanding...")
+        expansion(game, leaf, current_mode)
+        leaf = random.choice(leaf.children)
+        print("Defender simulating...")
+        value = rollout(game, current_mode)
+        print("Defender backpropogating...")
+        backpropogate(focus, value)
+
+        # update loop variables
+        clock += 1
+        if current_mode == Mode.DEFENDING:
+            current_mode = Mode.ATTACKING
+        else:
+            current_mode = Mode.DEFENDING
+
+    return best_move(focus)

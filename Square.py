@@ -37,18 +37,30 @@ class Square:
     # ---------------------------------------------------------------------------
     # attacker methods
     def is_available_for_attacker(self) -> bool:
-        """Checks the the Square can accept an Attacker."""
+        """Checks that the Square can accept an Attacker."""
+        return self.type != SquareType.REFUGE and self.occupied == Character.EMPTY
+
+    def is_available_for_defender(self) -> bool:
+        """Checks that the Square can accept a Defender."""
         return self.type != SquareType.REFUGE and self.occupied == Character.EMPTY
     
     def move_attacker_here(self):
         """Moves an Attacker to the Square."""
         self.occupied = Character.ATTACKER
 
+    def move_defender_here(self):
+        """Moves a Defender to the Square."""
+        self.occupied = Character.DEFENDER
+
+    def move_king_here(self):
+        """Moves the King to the Square."""
+        self.occupied = Character.KING
+
     # ---------------------------------------------------------------------------
     # utility methods
     def to_string(self) -> str:
         if self.occupied == Character.KING:
-            return "*"
+            return "@"
         elif self.occupied == Character.DEFENDER:
             return "D"
         elif self.occupied == Character.ATTACKER:
