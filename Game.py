@@ -41,7 +41,7 @@ class Game:
             self.defender_play(move)
 
     def get_ai_input(self) -> Move:
-        return monte_carlo_tree_search(self, Node())
+        return monte_carlo_tree_search(self, Node(g=self))
 
     def in_bounds(self, destination: tuple) -> bool:
         if destination[0] < 1 or destination[0] > 11:
@@ -49,6 +49,42 @@ class Game:
         if destination[1] < 1 or destination[1] > 11:
             return False
         return True
+
+    def get_king_moves(self) -> list:
+        moves = []
+        defender = copy.deepcopy(self.king)
+        # check upwards
+        i = 1
+        dest = (defender[0], defender[1]+i)
+        while self.in_bounds(dest) and self.board[dest].is_available_for_king():
+            moves.append(Move(defender, dest))
+            i += 1
+            dest = (defender[0], defender[1]+i)
+
+        # check downwards
+        i = 1
+        dest = (defender[0], defender[1]-i)
+        while self.in_bounds(dest) and self.board[dest].is_available_for_king():
+            moves.append(Move(defender, dest))
+            i += 1
+            dest = (defender[0], defender[1]-i)
+            
+        # check left
+        i = 1
+        dest = (defender[0]-i, defender[1])
+        while self.in_bounds(dest) and self.board[dest].is_available_for_king():
+            moves.append(Move(defender, dest))
+            i += 1
+            dest = (defender[0]-i, defender[1])
+
+        # check right
+        i = 1
+        dest = (defender[0]+i, defender[1])
+        while self.in_bounds(dest) and self.board[dest].is_available_for_king():
+            moves.append(Move(defender, dest))
+            i += 1
+            dest = (defender[0]+i, defender[1])
+        return moves
 
     def get_attacker_moves(self) -> list:
         moves = []
@@ -87,12 +123,10 @@ class Game:
                 dest = (attacker[0]+i, attacker[1])
         
         return moves
-
+    
     def get_defender_moves(self) -> list:
         moves = []
-        defenders_and_king = copy.deepcopy(self.defenders)
-        defenders_and_king.append(self.king)
-        for defender in defenders_and_king:
+        for defender in self.defenders:
 
             # check upwards
             i = 1
@@ -125,6 +159,10 @@ class Game:
                 moves.append(Move(defender, dest))
                 i += 1
                 dest = (defender[0]+i, defender[1])
+
+        king_moves = self.get_king_moves()
+        for move in king_moves:
+            moves.append(move)
         
         return moves
 
@@ -353,6 +391,9 @@ class Game:
             return GameState.DEFENDERS_WIN
         
         self.check_pieces()
+
+        if self.clock > 100:
+            return GameState.DRAW
         return GameState.ACTIVE
 
     def add_turn(self):
@@ -385,18 +426,19 @@ def expansion(game: Game, focus: Node, mode: Mode):
     """Expands given leaf node with all possible next states."""
     moves = game.get_attacker_moves() if mode == Mode.ATTACKING else game.get_defender_moves()
     for move in moves:
-        novel = Node(focus, move)
+        novel = Node(parent=focus, m=move, g=copy.deepcopy(game))
         focus.children.append(novel)
 
-def terminal(simulation: Game) -> bool:
+def terminal(simulation: Game) -> tuple:
     state = simulation.check_state()
     if state != GameState.ACTIVE:
-        return True
-    return False
+        return (True, state)
+    return (False, state)
 
 def rollout(game: Game, mode: Mode) -> Game:
     """Performs a simulation from the current state of the given Game."""
     simulation = copy.deepcopy(game)
+    ender = None
     
     while True:
         print(">>>SIMULATION<<<")
@@ -405,7 +447,8 @@ def rollout(game: Game, mode: Mode) -> Game:
             attacker_move = random.choice(simulation.get_attacker_moves())
             simulation.perform(attacker_move, mode)
             simulation.add_turn()
-            if terminal(simulation):
+            ender = terminal(simulation)
+            if ender[0]:
                 break
             mode = Mode.DEFENDING
             print(simulation.king)
@@ -413,12 +456,13 @@ def rollout(game: Game, mode: Mode) -> Game:
             defender_move = random.choice(simulation.get_defender_moves())
             simulation.perform(defender_move, mode)
             simulation.add_turn()
-            if terminal(simulation):
+            ender = terminal(simulation)
+            if ender[0]:
                 break
             mode = Mode.ATTACKING
             print(simulation.king)
 
-    status = simulation.check_state()
+    status = ender[1]
     value = 0
     if status == GameState.ATTACKERS_WON:
         value = -1 * simulation.get_clock()
@@ -439,22 +483,22 @@ def best_move(focus: Node) -> Move:
     return targets[0].get_move()
 
 def monte_carlo_tree_search(game: Game, root: Node) -> Move:
-    MAX_TIME = 100
+    MAX_TIME = 10
     clock = 0
-    focus = root
+    leaf = root
     current_mode = Mode.DEFENDING
 
     while clock < MAX_TIME:
         print(f"Starting cycle {clock} out of {MAX_TIME}...")
         print("Defender selecting...")
-        leaf = selection(focus)
+        leaf = selection(leaf)
         print("Defender expanding...")
-        expansion(game, leaf, current_mode)
+        expansion(leaf.get_game(), leaf, current_mode)
         leaf = random.choice(leaf.children)
         print("Defender simulating...")
-        value = rollout(game, current_mode)
+        value = rollout(leaf.get_game(), current_mode)
         print("Defender backpropogating...")
-        backpropogate(focus, value)
+        backpropogate(leaf, value)
 
         # update loop variables
         clock += 1
@@ -463,4 +507,4 @@ def monte_carlo_tree_search(game: Game, root: Node) -> Move:
         else:
             current_mode = Mode.DEFENDING
 
-    return best_move(focus)
+    return best_move(root)

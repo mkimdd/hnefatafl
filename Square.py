@@ -43,6 +43,10 @@ class Square:
     def is_available_for_defender(self) -> bool:
         """Checks that the Square can accept a Defender."""
         return self.type != SquareType.REFUGE and self.occupied == Character.EMPTY
+
+    def is_available_for_king(self) -> bool:
+        """Checks that the Square can accept the King."""
+        return self.occupied == Character.EMPTY
     
     def move_attacker_here(self):
         """Moves an Attacker to the Square."""
