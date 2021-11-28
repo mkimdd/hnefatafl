@@ -41,7 +41,7 @@ class Game:
             self.defender_play(move)
 
     def get_ai_input(self) -> Move:
-        return monte_carlo_tree_search(self, Node(g=self))
+        return monte_carlo_tree_search(Node(g=self))
 
     def in_bounds(self, destination: tuple) -> bool:
         if destination[0] < 1 or destination[0] > 11:
@@ -392,7 +392,7 @@ class Game:
         
         self.check_pieces()
 
-        if self.clock > 100:
+        if self.clock > 250:
             return GameState.DRAW
         return GameState.ACTIVE
 
@@ -424,7 +424,8 @@ def selection(focus: Node) -> Node:
 
 def expansion(game: Game, focus: Node, mode: Mode):
     """Expands given leaf node with all possible next states."""
-    moves = game.get_attacker_moves() if mode == Mode.ATTACKING else game.get_defender_moves()
+    n = 3
+    moves = random.sample(game.get_attacker_moves(), n) if mode == Mode.ATTACKING else random.sample(game.get_defender_moves(), n)
     for move in moves:
         novel = Node(parent=focus, m=move, g=copy.deepcopy(game))
         focus.children.append(novel)
@@ -479,11 +480,11 @@ def backpropogate(focus: Node, result: int):
 
 def best_move(focus: Node) -> Move:
     targets = focus.children
-    targets.sort(key=lambda x: x.confidence(), reverse=True)
+    targets.sort(key=lambda x: x.get_n(), reverse=True)
     return targets[0].get_move()
 
-def monte_carlo_tree_search(game: Game, root: Node) -> Move:
-    MAX_TIME = 10
+def monte_carlo_tree_search(root: Node) -> Move:
+    MAX_TIME = 25
     clock = 0
     leaf = root
     current_mode = Mode.DEFENDING

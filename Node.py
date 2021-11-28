@@ -26,7 +26,7 @@ class Node:
         try:
             confidence = self.t + 2 * math.sqrt(math.log(self.parent.get_n())/self.n)
         except ValueError:
-            return -1023
+            return 100000
         return confidence
     def update(self, result):
         self.n += 1
