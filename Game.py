@@ -30,9 +30,17 @@ class Game:
 
         # what the current game state is
         self.game_state = GameState.ACTIVE
+        self.attackers_captured = 0
+        self.defenders_captured = 0
 
     def get_board(self) -> dict:
         return self.board
+
+    def get_attackers_captured(self) -> int:
+        return self.attackers_captured
+
+    def get_defenders_captured(self) -> int:
+        return self.defenders_captured
 
     def perform(self, move: Move, mode: Mode):
         if mode == Mode.ATTACKING:
@@ -376,10 +384,12 @@ class Game:
             if self.check_capture(attacker, Character.ATTACKER):
                 self.attackers.remove(attacker)
                 self.board[attacker].clear()
+                self.attackers_captured += 1
         for defender in self.defenders:
             if self.check_capture(defender, Character.DEFENDER):
                 self.defenders.remove(defender)
                 self.board[defender].clear()
+                self.defenders_captured += 1
 
     def check_state(self) -> GameState:
         king_status = self.check_king()
@@ -406,9 +416,16 @@ class Game:
     def display(self):
         """Handles the 'graphics' of the Game."""
         os.system('cls' if os.name == 'nt' else 'clear') # this will only work for Windows
+        corner = "---"
+        print(f"{corner:5}", end='')
+        for i in range(1, 12):
+            print(f"{str(i):5}", end='')
+        print()
+        print()
         for y in range(1, 12):
+            print(f"{str(y):5}", end='')
             for x in range(1, 12):
-                print(f"{self.board[(x, y)].to_string()}   ", end='')
+                print(f"{self.board[(x, y)].to_string():5}", end='')
             print()
             print()
         print()
@@ -442,8 +459,8 @@ def rollout(game: Game, mode: Mode) -> Game:
     ender = None
     
     while True:
-        print(">>>SIMULATION<<<")
-        simulation.display()
+        #print(">>>SIMULATION<<<")
+        #simulation.display()
         if mode == Mode.ATTACKING:
             attacker_move = random.choice(simulation.get_attacker_moves())
             simulation.perform(attacker_move, mode)
@@ -452,7 +469,7 @@ def rollout(game: Game, mode: Mode) -> Game:
             if ender[0]:
                 break
             mode = Mode.DEFENDING
-            print(simulation.king)
+            #print(simulation.king)
         else:
             defender_move = random.choice(simulation.get_defender_moves())
             simulation.perform(defender_move, mode)
@@ -461,7 +478,7 @@ def rollout(game: Game, mode: Mode) -> Game:
             if ender[0]:
                 break
             mode = Mode.ATTACKING
-            print(simulation.king)
+            #print(simulation.king)
 
     status = ender[1]
     value = 0
@@ -470,7 +487,7 @@ def rollout(game: Game, mode: Mode) -> Game:
     elif status == GameState.DEFENDERS_WIN:
         value = simulation.get_clock()
     elif status == GameState.DRAW:
-        value = -1
+        value = (25 - simulation.get_defenders_captured()) + simulation.get_attackers_captured()
     return value
 
 def backpropogate(focus: Node, result: int):
@@ -484,21 +501,21 @@ def best_move(focus: Node) -> Move:
     return targets[0].get_move()
 
 def monte_carlo_tree_search(root: Node) -> Move:
-    MAX_TIME = 25
+    MAX_TIME = 81
     clock = 0
     leaf = root
     current_mode = Mode.DEFENDING
 
     while clock < MAX_TIME:
-        print(f"Starting cycle {clock} out of {MAX_TIME}...")
-        print("Defender selecting...")
+        #print(f"Starting cycle {clock} out of {MAX_TIME}...")
+        #print("Defender selecting...")
         leaf = selection(leaf)
-        print("Defender expanding...")
+        #print("Defender expanding...")
         expansion(leaf.get_game(), leaf, current_mode)
         leaf = random.choice(leaf.children)
-        print("Defender simulating...")
+        #print("Defender simulating...")
         value = rollout(leaf.get_game(), current_mode)
-        print("Defender backpropogating...")
+        #print("Defender backpropogating...")
         backpropogate(leaf, value)
 
         # update loop variables
