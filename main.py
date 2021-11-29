@@ -8,9 +8,10 @@ def play():
     game.setup_board()
     while(True):
         game.display()
-        attacker_move = None
-        while attacker_move == None:
-            attacker_move = game.get_move_input()
+        attacker_move = game.get_random_attacker_input()
+        #attacker_move = None
+        #while attacker_move == None:
+        #    attacker_move = game.get_move_input()
         game.attacker_play(attacker_move)
         game.add_turn()
         state = game.check_state()

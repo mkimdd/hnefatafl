@@ -27,6 +27,7 @@ class Game:
         self.defenders = []
         self.refuge = []
         self.king = (6, 6)
+        self.final = None
 
         # what the current game state is
         self.game_state = GameState.ACTIVE
@@ -50,6 +51,9 @@ class Game:
 
     def get_ai_input(self) -> Move:
         return monte_carlo_tree_search(Node(g=self))
+
+    def get_random_attacker_input(self) -> Move:
+        return random.choice(self.get_attacker_moves())
 
     def in_bounds(self, destination: tuple) -> bool:
         if destination[0] < 1 or destination[0] > 11:
@@ -329,6 +333,15 @@ class Game:
     def plus_position(self, loc: tuple, mod: tuple) -> tuple:
         return (loc[0] + mod[0], loc[1] + mod[1])
 
+    def get_king_md_to_safe(self) -> int:
+        """Returns the Manhattan Distance from the King to the nearest win Square."""
+        safe_squares = [(1,1), (1,11), (11,1), (11,11)]
+        mds = []
+        for square in safe_squares:
+            md = abs(self.final[0]-square[0]) + abs(self.final[1]-square[1])
+            mds.append(md)
+        return min(mds)
+
     def check_king(self) -> KingEndState:
         """Check if the king has been captured or saved."""
         moves = [
@@ -348,6 +361,7 @@ class Game:
                 captured = False
                 break
         if captured:
+            self.final = self.king
             self.king = None
             return KingEndState.CAPTURED
 
@@ -398,11 +412,13 @@ class Game:
             return GameState.ATTACKERS_WON
         if king_status == KingEndState.SAVED:
             self.game_state = GameState.DEFENDERS_WIN
+            self.final = self.king
             return GameState.DEFENDERS_WIN
         
         self.check_pieces()
 
         if self.clock > 250:
+            self.final = self.king
             return GameState.DRAW
         return GameState.ACTIVE
 
@@ -441,7 +457,7 @@ def selection(focus: Node) -> Node:
 
 def expansion(game: Game, focus: Node, mode: Mode):
     """Expands given leaf node with all possible next states."""
-    n = 3
+    n = 10
     moves = random.sample(game.get_attacker_moves(), n) if mode == Mode.ATTACKING else random.sample(game.get_defender_moves(), n)
     for move in moves:
         novel = Node(parent=focus, m=move, g=copy.deepcopy(game))
@@ -462,7 +478,11 @@ def rollout(game: Game, mode: Mode) -> Game:
         #print(">>>SIMULATION<<<")
         #simulation.display()
         if mode == Mode.ATTACKING:
-            attacker_move = random.choice(simulation.get_attacker_moves())
+            try:
+                attacker_move = random.choice(simulation.get_attacker_moves())
+            except IndexError:
+                ender = (True, GameState.DEFENDERS_WIN)
+                break
             simulation.perform(attacker_move, mode)
             simulation.add_turn()
             ender = terminal(simulation)
@@ -471,7 +491,11 @@ def rollout(game: Game, mode: Mode) -> Game:
             mode = Mode.DEFENDING
             #print(simulation.king)
         else:
-            defender_move = random.choice(simulation.get_defender_moves())
+            try:
+                defender_move = random.choice(simulation.get_defender_moves())
+            except IndexError:
+                ender = (True, GameState.ATTACKERS_WON)
+                break
             simulation.perform(defender_move, mode)
             simulation.add_turn()
             ender = terminal(simulation)
@@ -487,7 +511,8 @@ def rollout(game: Game, mode: Mode) -> Game:
     elif status == GameState.DEFENDERS_WIN:
         value = simulation.get_clock()
     elif status == GameState.DRAW:
-        value = (25 - simulation.get_defenders_captured()) + simulation.get_attackers_captured()
+        #value = (25 - simulation.get_defenders_captured()) + simulation.get_attackers_captured()
+        value = 20 - simulation.get_king_md_to_safe()
     return value
 
 def backpropogate(focus: Node, result: int):
@@ -501,7 +526,7 @@ def best_move(focus: Node) -> Move:
     return targets[0].get_move()
 
 def monte_carlo_tree_search(root: Node) -> Move:
-    MAX_TIME = 81
+    MAX_TIME = 100
     clock = 0
     leaf = root
     current_mode = Mode.DEFENDING
