@@ -2,7 +2,7 @@ import math
 
 class Node:
     """Represents Node for Monte Carlo Tree Search."""
-    def __init__(self, parent=None, m=None, g=None):
+    def __init__(self, parent=None, m=None, mm=None, g=None):
         """Initializes Node for Monte Carlo Tree Search."""
         self.g = g
         # n - number of visits to this Node
@@ -11,6 +11,8 @@ class Node:
         self.t = 0
         # m - represented move
         self.m = m
+        # mm - mode
+        self.mm = mm
         self.parent = parent
         self.children = []
     def add_child(self, child):
@@ -22,10 +24,10 @@ class Node:
     def get_game(self):
         return self.g
     def confidence(self):
-        print(f"{self.t} + math.sqrt( math.log( {self.parent.get_n()}/{self.n} ) )")
+        #print(f"{self.t} + math.sqrt( math.log( {self.parent.get_n()}/{self.n} ) )")
         try:
             confidence = self.t + 2 * math.sqrt(math.log(self.parent.get_n())/self.n)
-        except ValueError:
+        except (ValueError, ZeroDivisionError):
             return 100000
         return confidence
     def update(self, result):
