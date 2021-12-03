@@ -90,6 +90,7 @@ def play():
         print(f"avg loop time: {avg_loop}")
         print(f"avg attack time: {avg_attack}")
         print(f"avg defense time: {avg_defense}")
+        print(f"turns: {loops}")
         
         #Core game logic
         attackdur = time()
