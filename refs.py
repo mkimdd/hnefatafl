@@ -2,8 +2,8 @@ from enum import Enum
 
 class Character(Enum):
     EMPTY = 0
-    DEFENDER = 1
-    ATTACKER = 2
+    DEFENDER = 2
+    ATTACKER = 1
     KING = 3
 
 class SquareType(Enum):

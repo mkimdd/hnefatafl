@@ -8,7 +8,23 @@ from Move import Move
 from Node import Node
 
 class Game:
-    """Represents Hnefatafl game."""
+    """
+    A class used to represent a Hnefatafl game
+
+    ...
+
+    Attributes
+    ----------
+    clock : int
+        Integer representing number of turns that have been played
+    board : dict
+        Dictionary storing the states of each square of the Hnefatafl board
+
+    Methods
+    -------
+    get_board()
+        Returns the current board dictionary
+    """
 
     def __init__(self):
         """Intializes Game fields."""
@@ -34,14 +50,21 @@ class Game:
         self.attackers_captured = 0
         self.defenders_captured = 0
 
+        self.last_attack = None
+        self.last_defense = None
+
+
     def get_board(self) -> dict:
         return self.board
+
 
     def get_attackers_captured(self) -> int:
         return self.attackers_captured
 
+
     def get_defenders_captured(self) -> int:
         return self.defenders_captured
+
 
     def perform(self, move: Move, mode: Mode):
         if mode == Mode.ATTACKING:
@@ -49,11 +72,14 @@ class Game:
         else:
             self.defender_play(move)
 
+
     def get_ai_input(self) -> Move:
         return monte_carlo_tree_search(Node(g=self, mm=Mode.DEFENDING))
 
+
     def get_random_attacker_input(self) -> Move:
         return random.choice(self.get_attacker_moves())
+
 
     def in_bounds(self, destination: tuple) -> bool:
         if destination[0] < 1 or destination[0] > 7:
@@ -61,6 +87,7 @@ class Game:
         if destination[1] < 1 or destination[1] > 7:
             return False
         return True
+
 
     def get_king_moves(self) -> list:
         moves = []
@@ -97,6 +124,7 @@ class Game:
             i += 1
             dest = (defender[0]+i, defender[1])
         return moves
+
 
     def get_attacker_moves(self) -> list:
         moves = []
@@ -136,6 +164,7 @@ class Game:
         
         return moves
     
+
     def get_defender_moves(self) -> list:
         moves = []
         for defender in self.defenders:
@@ -177,6 +206,7 @@ class Game:
             moves.append(move)
         
         return moves
+
 
     def setup_board(self):
         """Sets up the board with a predefined starting arrangement."""
@@ -226,6 +256,7 @@ class Game:
         # setup square with king
         self.board[(4, 4)].set_character(Character.KING)
 
+
     def check_path(self, source: tuple, destination: tuple) -> MoveStatus:
         """Checks if the given move is legal."""
 
@@ -257,6 +288,7 @@ class Game:
 
         return MoveStatus.AVAILABLE
 
+
     def get_move_input(self) -> Move:
         try:
             move = input("Command >>> ")
@@ -271,8 +303,10 @@ class Game:
             print("INVALID COMMAND... EXITING")
             exit()
 
+
     def attacker_play(self, move: Move) -> bool:
         """Performs attacker move."""
+        self.last_attack = move
         source, dest = move.get_source(), move.get_destination()
 
         # makes the Attacker move is possible
@@ -290,8 +324,10 @@ class Game:
         
         return False
 
+
     def defender_play(self, move: Move) -> bool:
         """Performs defender move."""
+        self.last_defense = move
         source, dest = move.get_source(), move.get_destination()
 
         character = self.board[source].get_occupied()
@@ -314,8 +350,10 @@ class Game:
 
         return False
 
+
     def plus_position(self, loc: tuple, mod: tuple) -> tuple:
         return (loc[0] + mod[0], loc[1] + mod[1])
+
 
     def get_king_md_to_safe(self) -> int:
         """Returns the Manhattan Distance from the King to the nearest win Square."""
@@ -325,6 +363,7 @@ class Game:
             md = abs(self.final[0]-square[0]) + abs(self.final[1]-square[1])
             mds.append(md)
         return min(mds)
+
 
     def check_king(self) -> KingEndState:
         """Check if the king has been captured or saved."""
@@ -355,6 +394,7 @@ class Game:
 
         return KingEndState.NOTHING
 
+
     def check_capture(self, loc: tuple, type: Character) -> bool:
         """Checks if a piece has been captured."""
         if type == Character.ATTACKER:
@@ -377,6 +417,7 @@ class Game:
 
         return False
 
+
     def check_pieces(self):
         for attacker in self.attackers:
             if self.check_capture(attacker, Character.ATTACKER):
@@ -388,6 +429,7 @@ class Game:
                 self.defenders.remove(defender)
                 self.board[defender].clear()
                 self.defenders_captured += 1
+
 
     def check_state(self) -> GameState:
         king_status = self.check_king()
@@ -406,12 +448,15 @@ class Game:
             return GameState.DRAW
         return GameState.ACTIVE
 
+
     def add_turn(self):
         """Adds a turn to the Game clock."""
         self.clock += 1
 
+
     def get_clock(self) -> int:
         return self.clock
+
 
     def display(self):
         """Handles the 'graphics' of the Game."""
@@ -420,16 +465,33 @@ class Game:
         print(f"{corner:5}", end='')
         for i in range(1, 8):
             print(f"{str(i):5}", end='')
-        print()
-        print()
+        print('\n')
+        #print()
         for y in range(1, 8):
             print(f"{str(y):5}", end='')
             for x in range(1, 8):
                 print(f"{self.board[(x, y)].to_string():5}", end='')
-            print()
-            print()
-        print()
-        print(f"Game Status: {self.game_state}")
+            print('\n')
+            #print()
+        #print()
+        print(f"last attack: {self.last_attack}")
+        print(f"last defense: {self.last_defense}")
+        print(f"\nGame Status: {self.game_state}")
+
+
+    def serialize(self) -> str:
+        output = ""
+        for row in range(1,8):
+            for col in range(1,8):
+                cur = self.board[(row,col)]
+                occupant = str(cur.get_occupied().value)
+                # print(f"square {(row,col)} occupied by {occupant}")
+                output += occupant
+        return output
+
+
+
+
 
 def selection(focus: Node) -> Node:
     """Returns the best node for Defense."""

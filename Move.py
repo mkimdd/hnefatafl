@@ -6,3 +6,5 @@ class Move:
         return self.source
     def get_destination(self) -> tuple:
         return self.destination
+    def __repr__(self) -> str:
+        return f"{self.source} to {self.destination}"
