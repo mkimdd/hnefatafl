@@ -32,40 +32,41 @@ class AlphaBetaPlayer:
             h = game.get_board_heuristic(player)
             #print(h)
             return h
+            
 
-        if current_player_maximizing:
+        if current_player_maximizing: #defender
             availablemoves = game.get_defender_moves()
-        else:
+            shuffle(availablemoves)
+            
+            value = -inf
+            for move in availablemoves:
+                gamecopy = deepcopy(game)
+                # if player == Character.ATTACKER:
+                #     gamecopy.attacker_play(move)
+                # else:
+                gamecopy.defender_play(move)
+                
+                newvalue = AlphaBetaPlayer.minimax(depth - 1, False, gamecopy, alpha, beta, player)
+                value = max(value, newvalue)
+                alpha = max(alpha, value)
+
+                if value >= beta: break
+        else: #attacker
             availablemoves = game.get_attacker_moves()
-        shuffle(availablemoves)
+            shuffle(availablemoves)
 
-        if current_player_maximizing:
-            best = -inf
+            value = inf
             for move in availablemoves:
                 gamecopy = deepcopy(game)
-                if player == Character.ATTACKER:
-                    gamecopy.attacker_play(move)
-                else:
-                    gamecopy.defender_play(move)
+                # if player == Character.ATTACKER:
+                gamecopy.attacker_play(move)
+                # else:
+                #     gamecopy.defender_play(move)
                 
-                value = AlphaBetaPlayer.minimax(depth - 1, False, gamecopy, alpha, beta, player)
-                best = max(best, value)
-                alpha = max(alpha, best)
+                newvalue = AlphaBetaPlayer.minimax(depth - 1, True, gamecopy, alpha, beta, player)
+                value = min(value, newvalue)
+                beta = min(beta, value)
 
-                if beta <= alpha: break
-        else:
-            best = inf
-            for move in availablemoves:
-                gamecopy = deepcopy(game)
-                if player == Character.ATTACKER:
-                    gamecopy.attacker_play(move)
-                else:
-                    gamecopy.defender_play(move)
-                
-                value = AlphaBetaPlayer.minimax(depth - 1, True, gamecopy, alpha, beta, player)
-                best = min(best, value)
-                beta = min(beta, best)
+                if value <= alpha: break
 
-                if beta <= alpha: break
-
-        return best
+        return value
