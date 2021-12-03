@@ -1,4 +1,4 @@
-from Game2 import Game
+from Game import Game
 
 from refs import GameState
 from Move import Move
