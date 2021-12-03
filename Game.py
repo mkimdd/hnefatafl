@@ -207,8 +207,9 @@ class Game:
                 dest = (defender[0]+i, defender[1])
 
         king_moves = self.get_king_moves()
-        for move in king_moves:
-            moves.append(move)
+        moves = king_moves + moves
+        # for move in king_moves:
+        #     moves.append(move)
         
         return moves
 
@@ -471,12 +472,13 @@ class Game:
 
     def get_defender_heuristic(self):
         kingdistremaining = self.get_king_md_to_safe()
-        numdef = int(len(self.defenders) / self.STARTING_DEFENDERS * 10)
+        if kingdistremaining == 0: return inf
+        numdef = len(self.defenders) / self.STARTING_DEFENDERS * 10
         return (self.BOARD_WIDTH - kingdistremaining) * 3 + numdef
 
 
     def get_attacker_heuristic(self):
-        numatt = int(len(self.attackers) / self.STARTING_ATTACKERS * 10)
+        numatt = len(self.attackers) / self.STARTING_ATTACKERS * (self.BOARD_WIDTH+1)
         kingneighbors = {
             (self.king[0] - 1, self.king[1]),
             (self.king[0] + 1, self.king[1]),
@@ -486,10 +488,9 @@ class Game:
 
         attackersbyking = 0
         for neighbor in kingneighbors:
-            if neighbor[0] < 1 or neighbor[0] > self.BOARD_WIDTH or neighbor[1] < 1 or neighbor[1] > self.BOARD_WIDTH:
-                continue
-            if self.board[neighbor].occupied == Character.ATTACKER:
-                attackersbyking += 1
+            if self.in_bounds(neighbor):
+                if self.board[neighbor].occupied == Character.ATTACKER:
+                    attackersbyking += 1
 
         return numatt + 3 * attackersbyking
 

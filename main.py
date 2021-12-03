@@ -29,6 +29,7 @@ def play():
     defense_sum = 0
     avg_defense = 0
     while(run):
+        print('\n\n')
         loops += 1
         dur = time()
 
@@ -85,7 +86,7 @@ def play():
         pygame.display.update()
 
         #Display in console
-        game.display()
+        #game.display()
         print(f"avg loop time: {avg_loop}")
         print(f"avg attack time: {avg_attack}")
         print(f"avg defense time: {avg_defense}")
