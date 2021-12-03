@@ -27,7 +27,7 @@ class AlphaBetaPlayer:
     
     def minimax(depth : int, current_player_maximizing : bool, game : Game, alpha : int, beta : int, player : Character):
         if depth == 0 or game.check_state() != GameState.ACTIVE:
-            return game.evaluateBoard(player)
+            return game.get_board_heuristic(player)
 
         if player == Character.ATTACKER:
             availablemoves = game.get_attacker_moves()

@@ -1,3 +1,4 @@
+from math import inf
 import os
 import random
 import copy
@@ -25,6 +26,10 @@ class Game:
     get_board()
         Returns the current board dictionary
     """
+
+    STARTING_ATTACKERS = 12.0
+    STARTING_DEFENDERS = 9.0
+    BOARD_WIDTH = 7
 
     def __init__(self):
         """Intializes Game fields."""
@@ -456,6 +461,50 @@ class Game:
 
     def get_clock(self) -> int:
         return self.clock
+
+
+    def get_defender_heuristic(self):
+        kingdistremaining = self.get_king_md_to_safe()
+        numdef = int(len(self.defenders) / self.STARTING_DEFENDERS * 10)
+        return (self.BOARD_WIDTH - kingdistremaining) * 3 + numdef
+
+
+    def get_attacker_heuristic(self):
+        numatt = int(len(self.attackers) / self.STARTING_ATTACKERS * 10)
+        kingneighbors = {
+            (self.king[0] - 1, self.king[1]),
+            (self.king[0] + 1, self.king[1]),
+            (self.king[0], self.king[1] - 1),
+            (self.king[0], self.king[1] + 1)
+        }
+
+        attackersbyking = 0
+        for neighbor in kingneighbors:
+            if neighbor[0] < 0 or neighbor[0] >= self.BOARD_WIDTH or neighbor[1] < 0 or neighbor[1] >= self.BOARD_WIDTH:
+                continue
+            if self.board[neighbor].occupied() == Character.ATTACKER:
+                attackersbyking += 1
+
+        return numatt + 3 * attackersbyking
+
+
+    def get_board_heuristic(self, player : Character):
+        gamestate = self.check_state()
+        if gamestate == GameState.DRAW: return 0
+        if player == Character.DEFENDER:
+            if gamestate == GameState.DEFENDERS_WIN:
+                return inf
+            elif gamestate == GameState.ATTACKERS_WON:
+                return -inf
+            else:
+                return self.get_defender_heuristic() - self.get_attacker_heuristic()
+        elif player == Character.ATTACKER:
+            if gamestate == GameState.ATTACKERS_WIN:
+                return inf
+            elif gamestate == GameState.DEFENDERS_WON:
+                return -inf
+        return self.get_attacker_heuristic() - self.get_defender_heuristic()
+        
 
 
     def display(self):
