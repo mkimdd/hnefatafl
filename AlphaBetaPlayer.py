@@ -30,7 +30,6 @@ class AlphaBetaPlayer:
         gamestate = game.check_state()
         if depth == 0 or gamestate != GameState.ACTIVE:
             h = game.get_board_heuristic(player)
-            #print(h)
             return h
             
 
@@ -41,9 +40,6 @@ class AlphaBetaPlayer:
             value = -inf
             for move in availablemoves:
                 gamecopy = deepcopy(game)
-                # if player == Character.ATTACKER:
-                #     gamecopy.attacker_play(move)
-                # else:
                 gamecopy.defender_play(move)
                 
                 newvalue = AlphaBetaPlayer.minimax(depth - 1, False, gamecopy, alpha, beta, player)
@@ -58,10 +54,7 @@ class AlphaBetaPlayer:
             value = inf
             for move in availablemoves:
                 gamecopy = deepcopy(game)
-                # if player == Character.ATTACKER:
                 gamecopy.attacker_play(move)
-                # else:
-                #     gamecopy.defender_play(move)
                 
                 newvalue = AlphaBetaPlayer.minimax(depth - 1, True, gamecopy, alpha, beta, player)
                 value = min(value, newvalue)
