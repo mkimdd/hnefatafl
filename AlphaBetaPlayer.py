@@ -2,16 +2,17 @@ from Game import Game
 from time import time
 from math import inf
 from copy import deepcopy
+from Move import Move
 from refs import Character, GameState
 from random import shuffle
 
 class AlphaBetaPlayer:
 
     # Get best move for defender
-    def pick_move(game : Game):
+    def pick_move(game : Game) -> Move:
         start = time()
         high = -inf
-        chosen_move = game.get_random_move()
+        chosen_move = game.get_random_defender_move()
         for move in game.get_defender_moves():
             gamecopy = deepcopy(game)
             gamecopy.defender_play(move)

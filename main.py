@@ -1,3 +1,4 @@
+from AlphaBetaPlayer import AlphaBetaPlayer
 from Game import Game
 
 from refs import GameState
@@ -107,7 +108,8 @@ def play():
         #-----
         
         defensedur = time()
-        defender_move = game.get_ai_input()
+        #defender_move = game.get_ai_input()
+        defender_move = AlphaBetaPlayer.pick_move(game)
         game.defender_play(defender_move)
         game.add_turn()
         defensedur = time() - defensedur

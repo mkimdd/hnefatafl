@@ -213,6 +213,12 @@ class Game:
         return moves
 
 
+    def get_random_defender_move(self) -> Move:
+        moves = self.get_defender_moves()
+        random.shuffle(moves)
+        return moves[0]
+
+
     def setup_board(self):
         """Sets up the board with a predefined starting arrangement."""
         # setup refuge squares
@@ -365,7 +371,7 @@ class Game:
         safe_squares = [(1,1), (1, 7), (7, 1), (7, 7)]
         mds = []
         for square in safe_squares:
-            md = abs(self.final[0]-square[0]) + abs(self.final[1]-square[1])
+            md = abs(self.king[0]-square[0]) + abs(self.king[1]-square[1])
             mds.append(md)
         return min(mds)
 
@@ -480,9 +486,9 @@ class Game:
 
         attackersbyking = 0
         for neighbor in kingneighbors:
-            if neighbor[0] < 0 or neighbor[0] >= self.BOARD_WIDTH or neighbor[1] < 0 or neighbor[1] >= self.BOARD_WIDTH:
+            if neighbor[0] < 1 or neighbor[0] > self.BOARD_WIDTH or neighbor[1] < 1 or neighbor[1] > self.BOARD_WIDTH:
                 continue
-            if self.board[neighbor].occupied() == Character.ATTACKER:
+            if self.board[neighbor].occupied == Character.ATTACKER:
                 attackersbyking += 1
 
         return numatt + 3 * attackersbyking
