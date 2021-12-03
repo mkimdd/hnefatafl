@@ -493,6 +493,7 @@ class Game:
 
 
 
+
 def selection(focus: Node) -> Node:
     """Returns the best node for Defense."""
     while len(focus.children) != 0:
@@ -500,6 +501,7 @@ def selection(focus: Node) -> Node:
         targets.sort(key=lambda x: x.confidence(), reverse=True)
         focus = targets[0]
     return focus
+
 
 def expansion(focus: Node):
     """Expands given leaf node with all possible next states."""
@@ -510,11 +512,13 @@ def expansion(focus: Node):
         novel = Node(parent=focus, m=move, mm=other, g=copy.deepcopy(focus.g))
         focus.children.append(novel)
 
+
 def terminal(simulation: Game) -> tuple:
     state = simulation.check_state()
     if state != GameState.ACTIVE:
         return (True, state)
     return (False, state)
+
 
 def rollout(game: Game, mode: Mode):
     """Performs a simulation from the current state of the given Game."""
@@ -563,15 +567,18 @@ def rollout(game: Game, mode: Mode):
         value = 1 / simulation.get_king_md_to_safe()
     return value
 
+
 def backpropogate(focus: Node, result):
     while focus.parent != None:
         focus.update(result)
         focus = focus.parent
 
+
 def best_move(focus: Node) -> Move:
     targets = focus.children
     targets.sort(key=lambda x: x.get_n(), reverse=True)
     return targets[0].get_move()
+
 
 def monte_carlo_tree_search(root: Node) -> Move:
     MAX_TIME = 50
@@ -609,5 +616,4 @@ def monte_carlo_tree_search(root: Node) -> Move:
         #else:
         #    current_mode = Mode.DEFENDING
 
-    
     return best_move(root)

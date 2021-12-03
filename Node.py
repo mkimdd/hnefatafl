@@ -26,7 +26,7 @@ class Node:
     def confidence(self):
         #print(f"{self.t} + math.sqrt( math.log( {self.parent.get_n()}/{self.n} ) )")
         try:
-            confidence = self.t + 2 * math.sqrt(math.log(self.parent.get_n())/self.n)
+            confidence = self.t + 1.41 * math.sqrt(math.log(self.parent.get_n())/self.n)
         except (ValueError, ZeroDivisionError):
             return 100000
         return confidence
