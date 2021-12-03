@@ -31,7 +31,6 @@ class AlphaBetaPlayer:
         if depth == 0 or gamestate != GameState.ACTIVE:
             h = game.get_board_heuristic(player)
             return h
-            
 
         if current_player_maximizing: #defender
             availablemoves = game.get_defender_moves()
@@ -47,6 +46,7 @@ class AlphaBetaPlayer:
                 alpha = max(alpha, value)
 
                 if value >= beta: break
+
         else: #attacker
             availablemoves = game.get_attacker_moves()
             shuffle(availablemoves)
