@@ -9,7 +9,7 @@ from random import shuffle
 class AlphaBetaPlayer:
 
     # Get best move for defender
-    def pick_move(game : Game) -> Move:
+    def pick_move(game : Game, arguments) -> Move:
         start = time()
         high = -inf
         chosen_move = game.get_random_defender_move()
@@ -22,7 +22,8 @@ class AlphaBetaPlayer:
                 chosen_move = move
 
         end = time()
-        print(f"Move chosen in {end-start} seconds.")
+        if not arguments.data_mode:
+            print(f"Move chosen in {end-start} seconds.")
         return chosen_move
 
     

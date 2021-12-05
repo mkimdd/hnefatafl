@@ -17,7 +17,7 @@ FPS = 60
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Hnefatafl')
 
-def play(args=None):
+def run(args=None):
     if args is None:
         args = sys.argv[1:]
 
@@ -32,9 +32,11 @@ def play(args=None):
     elif arguments.algorithm:
         print('invalid agent algorithm argument')
         exit(1)
-    else:
-        print('no agent algorithm selected, defaulting to mcts')
 
+    while(True):
+        play(arguments)
+
+def play(arguments=None):
     game = Game()
     game.setup_board()
     
@@ -49,7 +51,8 @@ def play(args=None):
     defense_sum = 0
     avg_defense = 0
     while(run):
-        print('\n\n')
+        if not arguments.data_mode:
+            print('\n\n')
         loops += 1
         dur = time()
 
@@ -58,6 +61,8 @@ def play(args=None):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+                if arguments.data_mode:
+                    exit(1)
 
         #Display game in console and GUI
         #Get serial string representation of board
@@ -107,10 +112,11 @@ def play(args=None):
 
         #Display in console
         #game.display()
-        print(f"avg loop time: {avg_loop}")
-        print(f"avg attack time: {avg_attack}")
-        print(f"avg defense time: {avg_defense}")
-        print(f"turns: {loops}")
+        if not arguments.data_mode:
+            print(f"avg loop time: {avg_loop}")
+            print(f"avg attack time: {avg_attack}")
+            print(f"avg defense time: {avg_defense}")
+            print(f"turns: {loops}")
         
         #Core game logic
         attackdur = time()
@@ -134,10 +140,7 @@ def play(args=None):
         if arguments.algorithm == 'mcts':
             defender_move = game.get_ai_input()
         elif arguments.algorithm == 'ab':
-            defender_move = AlphaBetaPlayer.pick_move(game)
-        # use mcts as default
-        else:
-            defender_move = game.get_ai_input()
+            defender_move = AlphaBetaPlayer.pick_move(game, arguments=arguments)
         game.defender_play(defender_move)
         game.add_turn()
         defensedur = time() - defensedur
@@ -148,20 +151,25 @@ def play(args=None):
         if state != GameState.ACTIVE:
             break
 
+        if arguments.data_mode:
+            if game.king in [(1, 2), (2, 1), (6, 7), (7, 6), (1, 6), (6, 1), (2, 7), (7, 2)]:
+                break
+
         dur = time() - dur
         loop_sum += dur
         avg_loop = loop_sum / loops
 
         
-
-    print(f"Game is over with final result: {state} in {game.get_clock()} turns.")
-    
-    #loop so player can see end state until closed manually
-    while(run):
-        clock.tick(FPS)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                run = False
+    if arguments.data_mode:
+        print(f"{arguments.algorithm} reached win state in {game.get_clock() + 1} turns.")
+    else:
+        print(f"Game is over with final result: {state} in {game.get_clock()} turns.")
+        #loop so player can see end state until closed manually
+        while(run):
+            clock.tick(FPS)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
 
 if __name__ == "__main__":
-    play()
+    run()
