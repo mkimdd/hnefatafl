@@ -33,10 +33,17 @@ def run(args=None):
         print('invalid agent algorithm argument')
         exit(1)
 
-    while(True):
+    if arguments.data_mode:
+        # iteration counter
+        count = 0
+
+        while(True):
+            count += 1
+            play(arguments, count)
+    else:
         play(arguments)
 
-def play(arguments=None):
+def play(arguments=None, count=None):
     game = Game()
     game.setup_board()
     
@@ -161,7 +168,7 @@ def play(arguments=None):
 
         
     if arguments.data_mode:
-        print(f"{arguments.algorithm} reached win state in {game.get_clock() + 1} turns.")
+        print(f"{count} - {arguments.algorithm} reached win state in {game.get_clock() + 1} turns.")
     else:
         print(f"Game is over with final result: {state} in {game.get_clock()} turns.")
         #loop so player can see end state until closed manually
