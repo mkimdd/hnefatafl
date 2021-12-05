@@ -1,3 +1,5 @@
+import sys
+
 from AlphaBetaPlayer import AlphaBetaPlayer
 from Game import Game
 
@@ -8,12 +10,30 @@ from time import time
 import pygame
 from constants import BLACK, BLUE, GREEN, RED, WIDTH, HEIGHT, ROWS, COLS, SQUARE_SIZE, LIGHT_GREY, WHITE
 
+from arguments import get_arguments
+
 FPS = 60
 
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Hnefatafl')
 
-def play():
+def play(args=None):
+    if args is None:
+        args = sys.argv[1:]
+
+    # parse arguments
+    arguments = get_arguments()
+
+    # select which algorithm to use based on arguments
+    if arguments.algorithm == 'mcts':
+        print('mcts algorithm selected')
+    elif arguments.algorithm == 'ab':
+        print('alpha-beta algorithm selected')
+    elif arguments.algorithm:
+        print('invalid agent algorithm argument')
+        exit(1)
+    else:
+        print('no agent algorithm selected, defaulting to mcts')
 
     game = Game()
     game.setup_board()
@@ -110,8 +130,14 @@ def play():
         #-----
         
         defensedur = time()
-        #defender_move = game.get_ai_input()
-        defender_move = AlphaBetaPlayer.pick_move(game)
+        # select which algorithm to use based on arguments
+        if arguments.algorithm == 'mcts':
+            defender_move = game.get_ai_input()
+        elif arguments.algorithm == 'ab':
+            defender_move = AlphaBetaPlayer.pick_move(game)
+        # use mcts as default
+        else:
+            defender_move = game.get_ai_input()
         game.defender_play(defender_move)
         game.add_turn()
         defensedur = time() - defensedur
