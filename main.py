@@ -17,6 +17,20 @@ FPS = 60
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Hnefatafl')
 
+def get_median(data):
+    data.sort()
+
+    length = len(data)
+
+    if length % 2 == 0:
+        first = data[length // 2]
+        second = data[length // 2 - 1]
+        result = (first + second) / 2
+    elif length % 2 > 0:
+        result = data[length // 2]
+
+    return result
+
 def run(args=None):
     if args is None:
         args = sys.argv[1:]
@@ -34,16 +48,15 @@ def run(args=None):
         exit(1)
 
     if arguments.data_mode:
-        # iteration counter
-        count = 0
+        # statistics
+        data = []
 
         while(True):
-            count += 1
-            play(arguments, count)
+            play(arguments, data)
     else:
         play(arguments)
 
-def play(arguments=None, count=None):
+def play(arguments=None, data=None):
     game = Game()
     game.setup_board()
     
@@ -168,7 +181,12 @@ def play(arguments=None, count=None):
 
         
     if arguments.data_mode:
-        print(f"{count} - {arguments.algorithm} reached win state in {game.get_clock() + 1} turns.")
+        num_moves = game.get_clock() + 1
+        data.append(num_moves)
+        mean = (sum(data) / len(data))
+        move_range = (max(data) - min(data))
+        median = get_median(data)
+        print(f"{len(data)} - {arguments.algorithm} reached win state in {num_moves} moves. Mean: {mean} moves. Median: {median} moves. Range: {move_range} moves.")
     else:
         print(f"Game is over with final result: {state} in {game.get_clock()} turns.")
         #loop so player can see end state until closed manually
